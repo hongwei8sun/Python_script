@@ -1,5 +1,4 @@
 
-
 f = open ("TC1988.txt","r")
 
 c = f.readlines()
