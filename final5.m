@@ -100,7 +100,8 @@ v1_min = 0.1;
 v1_max = 2500.0;
 
 v1     = [v1_min:Dv1:v1_max];                 % corresponding wavelength: 4~100 um
-v1_H2O_contimn = [v1_min:Dv1:1400];
+v1_H2O_contimn_B = [v1_min:Dv1:500];
+v1_H2O_contimn_T = [v1_min:Dv1:1400];
 
 X1_CO2   = air_num_density*concnt1_CO2;   % number density [molecule/cm3]
 X2_CO2   = air_num_density*concnt2_CO2;    
@@ -166,7 +167,8 @@ for i=2:length(P)
 
     Dtau_H2O_contimn(i,:) = 0.5*(Kappa_P_rho_B + Kappa_P_rho_T) * delt_height(i);
     
-    Dtau_H2O_contimn(i,length(v1_H2O_contimn):length(v1)) = 0.0;
+    Dtau_H2O_contimn(i , length(v1_H2O_contimn_T) : length(v1)) = 0.0;
+    Dtau_H2O_contimn(i , 1 : length(v1_H2O_contimn_B)         ) = 0.0;
     
 end
 
