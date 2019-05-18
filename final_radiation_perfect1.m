@@ -106,7 +106,6 @@ Pi = 3.14;
 NA = 6.02214129*10^(23);  % [mol-1]
 M_air   = 29;
 M_H2O   = 18;
-M_CO2   = 44;
 %air_rho = air_num_density/NA*M_air  % [g/cm3]
 
 % modify value: $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $ $
@@ -117,15 +116,8 @@ v1_min = 0.1;
 v1_max = 2500.0;
 
 v1     = [v1_min:Dv1:v1_max];                 % corresponding wavelength: 4~100 um
-
 v1_H2O_contimn_B = [v1_min:Dv1:500];
 v1_H2O_contimn_T = [v1_min:Dv1:1400];
-
-v1_CO2_contimn_B_a = [v1_min:Dv1:190];
-v1_CO2_contimn_T_a = [v1_min:Dv1:450];
-
-v1_CO2_contimn_B_b = [v1_min:Dv1:1150];
-v1_CO2_contimn_T_b = [v1_min:Dv1:1800];
 
 X1_CO2   = air_num_density*concnt1_CO2;   % number density [molecule/cm3]
 X2_CO2   = air_num_density*concnt2_CO2;    
@@ -134,9 +126,7 @@ X_O3     = air_num_density.*concnt_O3;
 X_CH4    = air_num_density.*concnt_CH4;
 X_N2O    = air_num_density.*concnt_N2O;
 
-rho_H2O   = X_H2O / NA * M_H2O * 10^3;     % [kg/m3]
-rho1_CO2  = X1_CO2 / NA * M_CO2 * 10^3;     % [kg/m3]
-rho2_CO2  = X2_CO2 / NA * M_CO2 * 10^3;     % [kg/m3]
+rho_H2O  = X_H2O / NA * M_H2O * 10^3;     % [kg/m3]
 
 %------------------------------------------------------------------
 % optical depth
@@ -148,10 +138,7 @@ Sigma_H2O    = zeros( length(Height) , length(v1) );
 Sigma_O3     = zeros( length(Height) , length(v1) );
 Sigma_CH4    = zeros( length(Height) , length(v1) );
 Sigma_N2O    = zeros( length(Height) , length(v1) );
-
-Kappa_H2O      = zeros( length(Height) , length(v1) ); % [m2/kg]
-Kappa_CO2_a    = zeros( length(Height) , length(v1) ); % [m2/kg]
-Kappa_CO2_b    = zeros( length(Height) , length(v1) ); % [m2/kg]
+Kappa_H2O    = zeros( length(Height) , length(v1) ); % [m2/kg]
 
 delt_height  = Height*0.0;
 
@@ -162,11 +149,7 @@ Dtau_O3    = zeros( length(Height) , length(v1) );
 Dtau_CH4   = zeros( length(Height) , length(v1) );
 Dtau_N2O   = zeros( length(Height) , length(v1) );
 
-Dtau_H2O_contimn   = zeros( length(Height) , length(v1) );
-Dtau1_CO2_contimn_a = zeros( length(Height) , length(v1) );
-Dtau1_CO2_contimn_b = zeros( length(Height) , length(v1) );
-Dtau2_CO2_contimn_a = zeros( length(Height) , length(v1) );
-Dtau2_CO2_contimn_b = zeros( length(Height) , length(v1) );
+Dtau_H2O_contimn = zeros( length(Height) , length(v1) );
 
 tau1_accumulate_CO2   = zeros( length(Height) , length(v1) );
 tau2_accumulate_CO2   = zeros( length(Height) , length(v1) );
@@ -174,14 +157,7 @@ tau_accumulate_H2O    = zeros( length(Height) , length(v1) );
 tau_accumulate_O3     = zeros( length(Height) , length(v1) );
 tau_accumulate_CH4    = zeros( length(Height) , length(v1) );
 tau_accumulate_N2O    = zeros( length(Height) , length(v1) );
-
 tau_accumulate_H2O_contimn = zeros( length(Height) , length(v1) );
-tau1_accumulate_CO2_contimn_a = zeros( length(Height) , length(v1) );
-tau1_accumulate_CO2_contimn_b = zeros( length(Height) , length(v1) );
-tau2_accumulate_CO2_contimn_a = zeros( length(Height) , length(v1) );
-tau2_accumulate_CO2_contimn_b = zeros( length(Height) , length(v1) );
-
-
 
 Dtau1_total   = zeros( length(Height) , length(v1) );
 Dtau2_total   = zeros( length(Height) , length(v1) );
@@ -190,67 +166,30 @@ tau1_accumulate_total = zeros( length(Height) , length(v1) );
 tau2_accumulate_total = zeros( length(Height) , length(v1) );
 
 2
-% for H2O and CO2  continuum -----------------------------------------------------
-fv_H2O_continm  =  12.17    - 0.051*v1       + 8.32*10^(-5)*v1.^2   - 7.07*10^(-8)*v1.^3   + 2.33*10^(-11)*v1.^4;
-fv_CO2_continm_a = -8.853 + 0.028534*v1 - 0.00043194*10^(-5)*v1.^2 + 1.4349*10^(-6)*v1.^3  - 1.5539*10^(-9)*v1.^4;
-fv_CO2_continm_b = -537.09  + 1.0886*v1  - 0.0007566*10^(-5)*v1.^2 + 1.8863*10^(-7)*v1.^3 - 8.2635*10^(-12)*v1.^4;
+% for water continuum -----------------------------------------------------
+fv_H2O_continm = 12.17 - 0.051*v1 + 8.32*10^(-5)*v1.^2 - 7.07*10^(-8)*v1.^3 + 2.33*10^(-11)*v1.^4;
             
 for i=1:length(P)        
-    Kappa_H2O(i,:)   = exp(fv_H2O_continm) *(296.0/temp(i))^4.25;  % [m2/kg]
-    Kappa_CO2_a(i,:) = exp(fv_CO2_continm_a)*(300.0/temp(i))^1.7;  % [m2/kg]
-    Kappa_CO2_b(i,:) = exp(fv_CO2_continm_b)*(300.0/temp(i))^1.7;  % [m2/kg]
+    Kappa_H2O(i,:) = exp(fv_H2O_continm)*(296/temp(i))^4.25;  % [m2/kg]
 end
 
-P_H2O    = concnt_H2O*M_H2O/M_air .* P *100.0; % [Pa]
-P1_CO2   = concnt1_CO2*M_CO2/M_air .* P *100.0; % [Pa]
-P2_CO2   = concnt2_CO2*M_CO2/M_air .* P *100.0; % [Pa]
+P_H2O = concnt_H2O*M_H2O/M_air .* P *100.0; % [Pa]
 
 for i=2:length(P)
 
     delt_height(i) = Height(i) - Height(i-1);
-
     
-    H2O_P_rho_B = P_H2O(i-1)/10000.0 * rho_H2O(i-1);
-    H2O_P_rho_T = P_H2O(i)/10000.0   * rho_H2O(i);
-    CO2_P_rho1_B = P1_CO2(i-1)/10000.0 * rho1_CO2(i-1);
-    CO2_P_rho1_T = P1_CO2(i)/10000.0   * rho1_CO2(i);
-    CO2_P_rho2_B = P2_CO2(i-1)/10000.0 * rho2_CO2(i-1);
-    CO2_P_rho2_T = P2_CO2(i)/10000.0   * rho2_CO2(i);
+    P_rho_B = P_H2O(i-1)/10000.0 * rho_H2O(i-1);
+    P_rho_T = P_H2O(i)/10000.0 * rho_H2O(i);
 
+    Kappa_P_rho_B = Kappa_H2O(i-1,:) * P_rho_B;
+    Kappa_P_rho_T = Kappa_H2O(i,:) * P_rho_T;
 
-    H2O_Kappa_P_rho_B  = Kappa_H2O(i-1,:)   * H2O_P_rho_B;
-    H2O_Kappa_P_rho_T  = Kappa_H2O(i,:)     * H2O_P_rho_T;
-
-    CO2_Kappa_P_rho1_B_a = Kappa_CO2_a(i-1,:) * CO2_P_rho1_B;
-    CO2_Kappa_P_rho1_T_a = Kappa_CO2_a(i,:)   * CO2_P_rho1_T;
-    CO2_Kappa_P_rho1_B_b = Kappa_CO2_b(i-1,:) * CO2_P_rho1_B;
-    CO2_Kappa_P_rho1_T_b = Kappa_CO2_b(i,:)   * CO2_P_rho1_T;
-
-    CO2_Kappa_P_rho2_B_a = Kappa_CO2_a(i-1,:) * CO2_P_rho2_B;
-    CO2_Kappa_P_rho2_T_a = Kappa_CO2_a(i,:)   * CO2_P_rho2_T;
-    CO2_Kappa_P_rho2_B_b = Kappa_CO2_b(i-1,:) * CO2_P_rho2_B;
-    CO2_Kappa_P_rho2_T_b = Kappa_CO2_b(i,:)   * CO2_P_rho2_T;
-
-    Dtau_H2O_contimn(i,:)  = 0.5*(H2O_Kappa_P_rho_B  + H2O_Kappa_P_rho_T)  * delt_height(i);
-    Dtau1_CO2_contimn_a(i,:) = 0.5*(CO2_Kappa_P_rho1_B_a + CO2_Kappa_P_rho1_T_a) * delt_height(i);
-    Dtau1_CO2_contimn_b(i,:) = 0.5*(CO2_Kappa_P_rho1_B_b + CO2_Kappa_P_rho1_T_b) * delt_height(i);
-    Dtau2_CO2_contimn_a(i,:) = 0.5*(CO2_Kappa_P_rho2_B_a + CO2_Kappa_P_rho2_T_a) * delt_height(i);
-    Dtau2_CO2_contimn_b(i,:) = 0.5*(CO2_Kappa_P_rho2_B_b + CO2_Kappa_P_rho2_T_b) * delt_height(i);    
-
-
+    Dtau_H2O_contimn(i,:) = 0.5*(Kappa_P_rho_B + Kappa_P_rho_T) * delt_height(i);
+    
     Dtau_H2O_contimn(i , length(v1_H2O_contimn_T) : length(v1)) = 0.0;
     Dtau_H2O_contimn(i , 1 : length(v1_H2O_contimn_B)         ) = 0.0;
-
-    Dtau1_CO2_contimn_a(i , length(v1_CO2_contimn_T_a) : length(v1)) = 0.0;
-    Dtau1_CO2_contimn_a(i , 1 : length(v1_CO2_contimn_B_a)         ) = 0.0;
-    Dtau1_CO2_contimn_b(i , length(v1_CO2_contimn_T_b) : length(v1)) = 0.0;
-    Dtau1_CO2_contimn_b(i , 1 : length(v1_CO2_contimn_B_b)         ) = 0.0;
     
-    Dtau2_CO2_contimn_a(i , length(v1_CO2_contimn_T_a) : length(v1)) = 0.0;
-    Dtau2_CO2_contimn_a(i , 1 : length(v1_CO2_contimn_B_a)         ) = 0.0;
-    Dtau2_CO2_contimn_b(i , length(v1_CO2_contimn_T_b) : length(v1)) = 0.0;
-    Dtau2_CO2_contimn_b(i , 1 : length(v1_CO2_contimn_B_b)         ) = 0.0;
-
 end
 
 3
@@ -284,10 +223,8 @@ for i=2:length(P)
     %Dtau_H2O(i,:) = 0.5*( Sigma_H2O(i-1,:) +Sigma_H2O(i,:) ) * 0.5*( X_H2O(i-1) +X_H2O(i) ) * 100.0*delt_height(i);
     %Dtau_CH4(i,:) = 0.5*( Sigma_CH4(i-1,:) +Sigma_CH4(i,:) ) * 0.5*( X_CH4(i-1) +X_CH4(i) ) * 100.0*delt_height(i);
 
-    Dtau1_total(i,:) =Dtau1_CO2(i,:) +Dtau_O3(i,:) +Dtau_H2O(i,:) +Dtau_CH4(i,:) +Dtau_N2O(i,:) ...
-			 +Dtau_H2O_contimn(i,:) +Dtau1_CO2_contimn_a(i,:) +Dtau1_CO2_contimn_b(i,:);
-    Dtau2_total(i,:) =Dtau2_CO2(i,:) +Dtau_O3(i,:) +Dtau_H2O(i,:) +Dtau_CH4(i,:) +Dtau_N2O(i,:) ...
-			 +Dtau_H2O_contimn(i,:) +Dtau2_CO2_contimn_a(i,:) +Dtau2_CO2_contimn_b(i,:);
+    Dtau1_total(i,:) =Dtau1_CO2(i,:) +Dtau_O3(i,:) +Dtau_H2O(i,:) +Dtau_CH4(i,:) +Dtau_N2O(i,:) +Dtau_H2O_contimn(i,:);
+    Dtau2_total(i,:) =Dtau2_CO2(i,:) +Dtau_O3(i,:) +Dtau_H2O(i,:) +Dtau_CH4(i,:) +Dtau_N2O(i,:) +Dtau_H2O_contimn(i,:);
     %Dtau1_total(i,:) = Dtau1_CO2(i,:) +Dtau_O3(i,:) +Dtau_H2O(i,:)  +Dtau_CH4(i,:);
     %Dtau2_total(i,:) = Dtau2_CO2(i,:) +Dtau_O3(i,:) +Dtau_H2O(i,:)  +Dtau_CH4(i,:);
 
@@ -297,19 +234,13 @@ for i=2:length(P)
     tau_accumulate_H2O(i,:)          = tau_accumulate_H2O(i-1,:)  + Dtau_H2O(i,:);
     tau_accumulate_CH4(i,:)          = tau_accumulate_CH4(i-1,:)  + Dtau_CH4(i,:);
     tau_accumulate_N2O(i,:)          = tau_accumulate_N2O(i-1,:)  + Dtau_N2O(i,:);
-    tau_accumulate_H2O_contimn(i,:)  = tau_accumulate_H2O_contimn(i-1,:)  + Dtau_H2O_contimn(i,:);
-    tau1_accumulate_CO2_contimn_a(i,:) = tau1_accumulate_CO2_contimn_a(i-1,:) + Dtau1_CO2_contimn_a(i,:);
-    tau1_accumulate_CO2_contimn_b(i,:) = tau1_accumulate_CO2_contimn_b(i-1,:) + Dtau1_CO2_contimn_b(i,:);
-    tau2_accumulate_CO2_contimn_a(i,:) = tau2_accumulate_CO2_contimn_a(i-1,:) + Dtau2_CO2_contimn_a(i,:);
-    tau2_accumulate_CO2_contimn_b(i,:) = tau2_accumulate_CO2_contimn_b(i-1,:) + Dtau2_CO2_contimn_b(i,:);    
-
+    tau_accumulate_H2O_contimn(i,:)  = tau_accumulate_H2O_contimn(i-1,:) + Dtau_H2O_contimn(i,:);
+    
     tau1_accumulate_total(i,:) = tau1_accumulate_CO2(i,:) +tau_accumulate_O3(i,:) +tau_accumulate_H2O(i,:) ...
-                        +tau_accumulate_CH4(i,:) +tau_accumulate_N2O(i,:) +tau_accumulate_H2O_contimn(i,:) ...
-			+tau1_accumulate_CO2_contimn_a(i,:) +tau1_accumulate_CO2_contimn_b(i,:);
+                        +tau_accumulate_CH4(i,:) +tau_accumulate_N2O(i,:) +tau_accumulate_H2O_contimn(i,:);
     
     tau2_accumulate_total(i,:) = tau2_accumulate_CO2(i,:) +tau_accumulate_O3(i,:) +tau_accumulate_H2O(i,:) ...
-                        +tau_accumulate_CH4(i,:) +tau_accumulate_N2O(i,:) +tau_accumulate_H2O_contimn(i,:) ...
-			+tau2_accumulate_CO2_contimn_a(i,:) +tau2_accumulate_CO2_contimn_b(i,:);
+                        +tau_accumulate_CH4(i,:) +tau_accumulate_N2O(i,:) +tau_accumulate_H2O_contimn(i,:);
                  
 end
 
@@ -336,9 +267,9 @@ for i=2:length(P)
     i
 for j=1:length(v1)
         
-    if( Dtau2_total(i,j) > Dtau_min )
+    if( Dtau1_total(i,j) > Dtau_min )
             
-        Nlev_sub   = floor( Dtau2_total(i,j) / Dtau_min ) + 1;
+        Nlev_sub   = floor( Dtau1_total(i,j) / Dtau_min ) + 1;
  
         Dtau1_sub   = Dtau1_total(i,j)/Nlev_sub;
         Dtau2_sub   = Dtau2_total(i,j)/Nlev_sub;
